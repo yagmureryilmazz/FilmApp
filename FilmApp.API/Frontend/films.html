@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Films</title>
+</head>
+<body>
+<h2>Film Listesi</h2>
+<button onclick="getFilms()">Filmleri Getir</button>
+<ul id="filmList"></ul>
+
+<script>
+    async function getFilms() {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch("http://localhost:5236/api/films", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+        const films = data["$values"] || data; // Hem düz hem $values uyumlu
+
+        const list = document.getElementById("filmList");
+        list.innerHTML = "";
+
+        if (!films || films.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "Film verisi bulunamadı.";
+            list.appendChild(li);
+            return;
+        }
+
+        films.forEach((film) => {
+            const li = document.createElement("li");
+            li.textContent = `${film.title} - ${film.director} (${film.releaseYear})`;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Sil";
+            deleteBtn.onclick = () => deleteFilm(film.id);
+
+            li.appendChild(deleteBtn);
+            list.appendChild(li);
+        });
+    }
+
+    async function deleteFilm(id) {
+        const token = localStorage.getItem("token");
+
+        const confirmDelete = confirm(`Bu filmi silmek istediğinize emin misiniz? (ID: ${id})`);
+        if (!confirmDelete) return;
+
+        const response = await fetch(`http://localhost:5236/api/films/${id}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+        });
+
+        if (response.ok) {
+            alert("Film başarıyla silindi.");
+            getFilms(); // Listeyi güncelle
+        } else {
+            const error = await response.text();
+            alert("Silme işlemi başarısız: " + error);
+        }
+    }
+</script>
+</body>
+</html>
+

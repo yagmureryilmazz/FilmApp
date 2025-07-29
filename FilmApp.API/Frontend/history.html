@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>İzleme Geçmişi</title>
+</head>
+<body>
+<h2>İzleme Geçmişim</h2>
+<button onclick="logout()">Çıkış Yap</button>
+
+<ul id="historyList"></ul>
+<p id="message" style="color: red;"></p>
+
+<script>
+    async function getHistory() {
+        const token = localStorage.getItem("token");
+        const message = document.getElementById("message");
+        const list = document.getElementById("historyList");
+
+        message.innerText = "";
+        list.innerHTML = "";
+
+        if (!token) {
+            message.innerText = "Lütfen önce giriş yapın.";
+            return;
+        }
+
+        try {
+            const response = await fetch("http://localhost:5236/api/watch-history/mine", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                message.innerText = "İzleme geçmişi alınamadı.";
+                return;
+            }
+
+            const data = await response.json();
+            const historyItems = data["$values"];
+
+            if (!historyItems || historyItems.length === 0) {
+                const li = document.createElement("li");
+                li.textContent = "Henüz izleme geçmişiniz yok.";
+                list.appendChild(li);
+                return;
+            }
+
+            historyItems.forEach((item) => {
+                const li = document.createElement("li");
+                const date = new Date(item.watchDate).toLocaleDateString();
+                li.textContent = `${item.film.title} (${item.film.releaseYear}) - İzlenme: ${date}`;
+                list.appendChild(li);
+            });
+        } catch (error) {
+            message.innerText = "Hata oluştu: " + error.message;
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+    }
+
+    window.onload = getHistory;
+</script>
+</body>
+</html>
